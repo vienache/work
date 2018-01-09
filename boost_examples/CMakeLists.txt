@@ -1,2 +1,3 @@
 add_subdirectory (format)
 add_subdirectory (property_tree)
+add_subdirectory (scope_exit)
