@@ -12,6 +12,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <sstream>
 
 #include "boost/format.hpp"
 
@@ -106,7 +107,22 @@ int main(){
       cerr <<  exc.what() << "\n\t\t***Dont worry, that was planned\n";
     }
 
-    
+    // print hex
+    std::stringstream ss;
+    std::vector<int> msgContent = { 0x01, 0x02, 15, 0xef };
+    try
+    {
+        for (auto i=0; i<msgContent.size(); ++i)
+        {
+            ss << boost::format("%1% ") % boost::io::group(std::setfill('0'), std::hex, std::setw(2), msgContent[i]);
+        }
+        cout << ss.str() << endl;
+    }
+    catch (const std::exception& ex)
+    {
+        cerr << "line: " << __LINE__ << " " << ex.what() << "\n";
+    }
+
     cerr << "\n\nEverything went OK, exiting. \n";
     return 0;
 }
