@@ -1,6 +1,7 @@
 add_subdirectory (format)
 add_subdirectory (preprocessor)
 add_subdirectory (property_tree)
+add_subdirectory (regex)
 add_subdirectory (scope_exit)
 add_subdirectory (spirit)
 add_subdirectory (tokenizer)
