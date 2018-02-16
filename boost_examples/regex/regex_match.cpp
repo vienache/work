@@ -6,8 +6,7 @@ int main()
 {
   try
   {
-    boost::basic_regex<char, boost::cpp_regex_traits<char>> r;
-    r = "_E[0-9]+\\.[0-9]+_";
+    boost::basic_regex<char, boost::cpp_regex_traits<char>> r("_E[0-9]+\\.[0-9]+_");
 
     std::string s("_E209.002_");
 
