@@ -2,12 +2,13 @@
 #include <string>
 #include <regex>
 
+static const std::string string("***abc_E209.002_123***");
+static const std::string pattern = "_E[0-9]+\\.[0-9]+_";
+
 int main()
 {
   //NOTE: it works with GCC 7.1
 
-  static const std::string string("***abc_E209.002_123***");
-  static const std::string pattern = "_E[0-9]+\\.[0-9]+_";
   std::regex r;
   std::smatch match;
 
@@ -25,7 +26,7 @@ int main()
     std::cout << "matched!" << std::endl;
     if ( not match.empty() )
     {
-      std::cout << match[0].str();
+      std::cout << match[0].str() << std::endl;
     }
   }
   else
