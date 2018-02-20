@@ -1,0 +1,16 @@
+--suffix=none
+--indent=spaces=4
+--style=allman
+--indent-switches
+--indent-namespaces
+--align-pointer=name
+--align-reference=name
+--indent-preprocessor
+--pad-oper
+--pad-paren-in
+--break-closing-brackets
+--add-brackets
+--max-code-length=80
+--break-after-logical
+--min-conditional-indent=0
+--keep-one-line-blocks
