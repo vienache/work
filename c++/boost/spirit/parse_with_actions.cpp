@@ -10,10 +10,10 @@ int main()
 
   auto it = s.begin();
 
-  bool match = qi::phrase_parse(it, s.end(),
-    qi::int_[([](int i){ std::cout << i << '\n'; })], ascii::space);
+  bool match = qi::phrase_parse( it, s.end(),
+  qi::int_[( []( int i ) { std::cout << i << '\n'; } )], ascii::space );
 
   std::cout << std::boolalpha << match << '\n';
-  if (it != s.end())
-    std::cout << std::string{it, s.end()} << '\n';
+  if ( it != s.end() )
+    std::cout << std::string {it, s.end()} << '\n';
 }

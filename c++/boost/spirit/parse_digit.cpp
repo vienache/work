@@ -6,11 +6,15 @@ using namespace boost::spirit;
 
 int main()
 {
-  std::string s;
-  std::getline(std::cin, s);
+  std::string s = "1";
+
   auto it = s.begin();
-  bool match = qi::parse(it, s.end(), ascii::digit);
+
+  bool match = qi::parse( it, s.end(), ascii::digit );
+
   std::cout << std::boolalpha << match << '\n';
-  if (it != s.end())
-    std::cout << std::string{it, s.end()} << '\n';
+  if ( it != s.end() )
+  {
+    std::cout << std::string {it, s.end()} << '\n';
+  }
 }

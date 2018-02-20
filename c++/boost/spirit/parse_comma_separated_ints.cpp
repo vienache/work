@@ -14,10 +14,10 @@ int main()
   auto it = s.begin();
   std::vector<int> v;
 
-  if (qi::phrase_parse(it, s.end(), qi::int_ % ',', ascii::space, v))
+  if ( qi::phrase_parse( it, s.end(), qi::int_ % ',', ascii::space, v ) )
   {
-    std::ostream_iterator<int> out(std::cout, "; ");
-    std::copy(v.begin(), v.end(), out);
+    std::ostream_iterator<int> out( std::cout, "; " );
+    std::copy( v.begin(), v.end(), out );
 
     std::cout << std::endl;
   }
