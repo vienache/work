@@ -1,4 +1,6 @@
 # add the executable
+add_executable(grammar grammar.cpp)
+add_executable(nesting_rules nesting_rules.cpp)
 add_executable(parse_comma_separated_ints parse_comma_separated_ints.cpp)
 add_executable(parse_digit parse_digit.cpp)
 add_executable(parse_digits parse_digits.cpp)
