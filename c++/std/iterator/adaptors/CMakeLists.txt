@@ -1,0 +1,2 @@
+add_executable(back_inserter back_inserter.cpp)
+add_executable(back_inserter_iterator back_inserter_iterator.cpp)
