@@ -1,4 +1,5 @@
 add_executable(clamp clamp.cpp)
+add_executable(copy_if copy_if.cpp)
 add_executable(copy_while copy_while.cpp)
 add_executable(gather gather.cpp)
 add_executable(hex_unhex hex_unhex.cpp)

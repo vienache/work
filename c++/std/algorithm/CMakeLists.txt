@@ -1,0 +1,5 @@
+add_executable(accumulate accumulate.cpp)
+add_executable(is_partitioned is_partitioned.cpp)
+add_executable(is_sorted is_sorted.cpp)
+add_executable(iter_swap iter_swap.cpp)
+add_executable(reverse reverse.cpp)
