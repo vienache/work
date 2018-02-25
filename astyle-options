@@ -10,7 +10,7 @@
 --pad-paren-in
 --break-closing-brackets
 --add-brackets
---max-code-length=80
+--max-code-length=100
 --break-after-logical
 --min-conditional-indent=0
 --keep-one-line-blocks
