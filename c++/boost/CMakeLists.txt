@@ -1,5 +1,6 @@
 add_subdirectory (algorithm)
 add_subdirectory (format)
+add_subdirectory (msm)
 add_subdirectory (preprocessor)
 add_subdirectory (property_tree)
 add_subdirectory (range)
