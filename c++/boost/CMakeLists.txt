@@ -1,4 +1,5 @@
 add_subdirectory (algorithm)
+add_subdirectory (circular_buffer)
 add_subdirectory (format)
 add_subdirectory (msm)
 add_subdirectory (preprocessor)
