@@ -1,5 +1,5 @@
 --suffix=none
---indent=spaces=2
+--indent=spaces=4
 --style=allman
 --indent-switches
 --indent-namespaces

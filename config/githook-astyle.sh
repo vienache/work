@@ -3,7 +3,7 @@
 #   cd .git/hooks
 #   ln -s ../../githook-astyle.sh pre-commit
 
-OPTIONS_FILE="astyle-options"
+OPTIONS_FILE="config/astyle-options"
 OPTIONS="--options=$OPTIONS_FILE"
 
 ASTYLE=$(which astyle)
