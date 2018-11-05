@@ -12,14 +12,19 @@ module AP_MODULE_DECLARE_DATA test_module;
 
 static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 {
-//    char *uri = ( char * ) ap_get_module_config( f->r->request_config, &test_module );
-//
-//    if ( !uri )
-//    {
-//        ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
-//                       "outputFilter: uri:%s",
-//                       uri );
-//    }
+    ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
+                               "outputFilter next:%i", (f->next != 0) );
+    if ( f->r )
+    {
+        //char *uri = ( char * ) ap_get_module_config( f->r->conn_config, &test_module );
+
+        if ( f->r->uri )
+        {
+            ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
+                           "outputFilter: uri:%s, c:0x%lx, r:0x%lx",
+                           f->r->uri, ( long int )f->c, ( long int )f->r );
+        }
+    }
 
     // Pass processing to next filters
     return ap_pass_brigade( f->next, bb );
@@ -28,12 +33,10 @@ static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 static int test_pre_conn( conn_rec *c, void *csd )
 {
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "test_pre_conn: cip:%s",
-                   c->client_ip );
+                   "test_pre_conn: cip:%s, c:0x%lx",
+                   c->client_ip, ( long int )c );
 
-    ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "hook pre_connection: adding HTTP filter \""OUT_FILTERNAME"\"" );
-    ap_add_output_filter( OUT_FILTERNAME, NULL, NULL, c );
+    //ap_add_output_filter( OUT_FILTERNAME, NULL, NULL, c );
 
     return OK;
 }
@@ -42,23 +45,32 @@ static int test_post_read_request( request_rec *r )
 {
     conn_rec *c = r->connection;
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "test_post_read_request: cip:%s, uri:%s",
+                   "test_post_read_request: cip:%s, uri:%s, c:0x%lx, r:0x%lx",
                    c->client_ip,
-                   r->uri );
+                   r->uri,
+                   ( long int )c,
+                   ( long int )r );
 
-    char *uri = apr_pcalloc( r->pool, 256 );
+    char *uri = apr_pcalloc( c->pool, 256 );
     strncpy( uri, r->uri, 256 );
-    ap_set_module_config( r->request_config, &test_module, ( void * )uri );
+    ap_set_module_config( c->conn_config, &test_module, ( void * )uri );
 
     return OK;
+}
+
+static void insert_output_filter(request_rec * r)
+{
+    ap_add_output_filter( OUT_FILTERNAME, NULL, r, r->connection);
 }
 
 static void test_register_hooks( apr_pool_t *p )
 {
     // http handling, with body
-    ap_register_output_filter( OUT_FILTERNAME, outputFilter, NULL, AP_FTYPE_CONNECTION ) ;
+    ap_register_output_filter( OUT_FILTERNAME, outputFilter, NULL, AP_FTYPE_PROTOCOL ) ;
 
     ap_hook_pre_connection( test_pre_conn, NULL, NULL, APR_HOOK_FIRST );
+
+    ap_hook_insert_filter( insert_output_filter, NULL, NULL, APR_HOOK_LAST );
 
     ap_hook_post_read_request( test_post_read_request, NULL, NULL, APR_HOOK_FIRST );
 }
@@ -86,3 +98,5 @@ AP_DECLARE_MODULE( test ) =
     test_cmds,           /* table of config file commands       */
     test_register_hooks  /* register hooks                      */
 };
+
+//modules/session/mod_session.c +498
