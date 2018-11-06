@@ -13,13 +13,12 @@ module AP_MODULE_DECLARE_DATA test_module;
 static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 {
 //    char *uri = ( char * ) ap_get_module_config( f->r->request_config, &test_module );
-//
-//    if ( !uri )
-//    {
-//        ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
-//                       "outputFilter: uri:%s",
-//                       uri );
-//    }
+
+    ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
+                   "outputFilter: c:0x%lx, r:0x%lx, s:0x%lx",
+                   ( long int )f->c,
+                   ( long int )f->r,
+                   ( long int )f->c->base_server );
 
     // Pass processing to next filters
     return ap_pass_brigade( f->next, bb );
@@ -28,8 +27,9 @@ static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 static int test_pre_conn( conn_rec *c, void *csd )
 {
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "test_pre_conn: cip:%s",
-                   c->client_ip );
+                   "test_pre_conn: cip:%s, c:0x%lx",
+                   c->client_ip,
+                   ( long int )c );
 
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
                    "hook pre_connection: adding HTTP filter \""OUT_FILTERNAME"\"" );
@@ -42,9 +42,11 @@ static int test_post_read_request( request_rec *r )
 {
     conn_rec *c = r->connection;
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "test_post_read_request: cip:%s, uri:%s",
+                   "test_post_read_request: cip:%s, uri:%s, c:0x%lx, s:0x%lx",
                    c->client_ip,
-                   r->uri );
+                   r->uri,
+                   ( long int )c,
+                   ( long int )r->server );
 
     char *uri = apr_pcalloc( r->pool, 256 );
     strncpy( uri, r->uri, 256 );
