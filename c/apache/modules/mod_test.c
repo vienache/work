@@ -12,19 +12,12 @@ module AP_MODULE_DECLARE_DATA test_module;
 
 static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 {
+    char *uri = ( char * ) ap_get_module_config( f->c->conn_config, &test_module );
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
-                               "outputFilter next:%i", (f->next != 0) );
-    if ( f->r )
-    {
-        //char *uri = ( char * ) ap_get_module_config( f->r->conn_config, &test_module );
-
-        if ( f->r->uri )
-        {
-            ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
-                           "outputFilter: uri:%s, c:0x%lx, r:0x%lx",
-                           f->r->uri, ( long int )f->c, ( long int )f->r );
-        }
-    }
+                   "outputFilter: uri:%s, c:0x%lx, r:0x%lx",
+                   uri,
+                   ( long int )f->c,
+                   ( long int )f->r );
 
     // Pass processing to next filters
     return ap_pass_brigade( f->next, bb );
@@ -34,9 +27,13 @@ static int test_pre_conn( conn_rec *c, void *csd )
 {
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
                    "test_pre_conn: cip:%s, c:0x%lx",
-                   c->client_ip, ( long int )c );
+                   c->client_ip,
+                   ( long int )c );
 
-    //ap_add_output_filter( OUT_FILTERNAME, NULL, NULL, c );
+    if ( c->sbh == 0 )
+    {
+        ap_add_output_filter( OUT_FILTERNAME, NULL, NULL, c );
+    }
 
     return OK;
 }
@@ -58,19 +55,22 @@ static int test_post_read_request( request_rec *r )
     return OK;
 }
 
-static void insert_output_filter(request_rec * r)
-{
-    ap_add_output_filter( OUT_FILTERNAME, NULL, r, r->connection);
-}
+//static void insert_output_filter(request_rec * r)
+//{
+//    ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, r->connection,
+//                   "insert_output_filter: c:0x%lx",
+//                   r->connection );
+//    ap_add_output_filter( OUT_FILTERNAME, NULL, r, r->connection);
+//}
 
 static void test_register_hooks( apr_pool_t *p )
 {
     // http handling, with body
-    ap_register_output_filter( OUT_FILTERNAME, outputFilter, NULL, AP_FTYPE_PROTOCOL ) ;
+    ap_register_output_filter( OUT_FILTERNAME, outputFilter, NULL, AP_FTYPE_CONNECTION ) ;
 
     ap_hook_pre_connection( test_pre_conn, NULL, NULL, APR_HOOK_FIRST );
 
-    ap_hook_insert_filter( insert_output_filter, NULL, NULL, APR_HOOK_LAST );
+    //ap_hook_insert_filter( insert_output_filter, NULL, NULL, APR_HOOK_LAST );
 
     ap_hook_post_read_request( test_post_read_request, NULL, NULL, APR_HOOK_FIRST );
 }
