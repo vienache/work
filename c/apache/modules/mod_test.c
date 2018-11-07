@@ -107,7 +107,7 @@ static apr_status_t inputFilter( ap_filter_t *f,
         return ap_get_brigade( f->next, bb, mode, block, readbytes );
     }
 
-    apr_table_setn( f->r->headers_out, "TestHeader", "10" );
+    apr_table_addn( f->r->headers_in, "TestHeader", "10" );
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
                    "inputFilter: TestHeader:10" );
 
@@ -225,6 +225,8 @@ static int my_fixup( request_rec *r )
                    r->uri,
                    ( long int )r );
 
+    apr_table_addn( r->headers_in, "TestHeader", r->uri );
+
     ap_add_input_filter( IN_FILTERNAME, NULL, r, c );
 
     return OK;
@@ -237,11 +239,14 @@ static int test_handler( request_rec *r )
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
                    "test_handler: r:0x%lx",
                    ( long int )r );
+
+    ap_set_content_type(r, "text/plain");
     return OK;
 }
 
 static void test_register_hooks( apr_pool_t *p )
 {
+    ap_hook_handler( test_handler, NULL, NULL, APR_HOOK_LAST );
     // http handling, with body
     ap_register_output_filter( OUT_FILTERNAME, outputFilter, NULL, AP_FTYPE_CONNECTION ) ;
 
@@ -255,7 +260,6 @@ static void test_register_hooks( apr_pool_t *p )
 
     //ap_hook_insert_filter( insert_input_filter, NULL, NULL, APR_HOOK_LAST );
 
-    ap_hook_handler( test_handler, NULL, NULL, APR_HOOK_FIRST );
 
     ap_hook_post_read_request( test_post_read_request, NULL, NULL, APR_HOOK_FIRST );
 }
