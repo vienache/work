@@ -10,6 +10,23 @@
 
 module AP_MODULE_DECLARE_DATA test_module;
 
+typedef struct
+{
+    char test_id[100];
+    char test_key[100];
+} test_conf_t;
+
+typedef struct
+{
+    int sz;
+    test_conf_t arr[4];
+} test_conf_arr_t;
+
+static test_conf_t test_conf;
+
+static test_conf_arr_t test_conf_arr_ids;
+static test_conf_arr_t test_conf_arr_key;
+
 static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 {
     char *uri = ( char * ) ap_get_module_config( f->c->conn_config, &test_module );
@@ -126,11 +143,29 @@ static int my_fixup( request_rec *r )
 {
     conn_rec *c = r->connection;
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "my_fixup: uri:%s, r:0x%lx",
+                   "my_fixup: uri:%s, r:0x%lx test_id:%s, test_key:%s",
                    r->uri,
-                   ( long int )r );
+                   ( long int )r,
+                   test_conf.test_id,
+                   test_conf.test_key );
 
     apr_table_addn( r->headers_in, "TestHeader", r->uri );
+
+    for (int i=0; i<test_conf_arr_key.sz; ++i)
+    {
+        ap_log_cerror( APLOG_MARK, APLOG_ERR, 0, c,
+                       "my_fixup: test_key[%i]=%s",
+                       i,
+                       test_conf_arr_key.arr[i].test_key);
+    }
+
+    for (int i=0; i<test_conf_arr_ids.sz; ++i)
+    {
+        ap_log_cerror( APLOG_MARK, APLOG_ERR, 0, c,
+                       "my_fixup: test_ids[%i]=%s",
+                       i,
+                       test_conf_arr_ids.arr[i].test_id);
+    }
 
     return OK;
 }
@@ -148,7 +183,31 @@ static void test_register_hooks( apr_pool_t *p )
 
 static const char *store_test_id( cmd_parms *cmd, void *cfg, int argc, char *const argv[] )
 {
-    ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool, "store_test_id" );
+    if ( argc != 1 )
+    {
+        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool,
+                       "testId requires exactly one argument." );
+    }
+    else
+    {
+        strcpy( test_conf.test_id, argv[0] );
+        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool, "testId: %s",
+                       test_conf.test_id );
+
+        int pos = test_conf_arr_ids.sz;
+        strncpy(test_conf_arr_ids.arr[pos].test_id, argv[0], 100);
+        test_conf_arr_ids.sz++;
+        //TODO: ProxyHTMLLinks
+    }
+
+    return NULL;
+}
+
+static const char *store_test_key( cmd_parms *cmd, void *dummy, const char *arg )
+{
+    int pos = test_conf_arr_key.sz;
+    strncpy(test_conf_arr_key.arr[pos].test_key, arg, 100);
+    test_conf_arr_key.sz++;
 
     return NULL;
 }
@@ -156,6 +215,7 @@ static const char *store_test_id( cmd_parms *cmd, void *cfg, int argc, char *con
 static const command_rec test_cmds[] =
 {
     AP_INIT_TAKE_ARGV( "testId", store_test_id, NULL, OR_FILEINFO, "test Id" ),
+    AP_INIT_ITERATE( "testKey", store_test_key, NULL, RSRC_CONF, "test Key" ),
     { NULL }
 };
 
