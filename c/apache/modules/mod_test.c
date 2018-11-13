@@ -151,20 +151,19 @@ static int my_fixup( request_rec *r )
 
     apr_table_addn( r->headers_in, "TestHeader", r->uri );
 
-    for (int i=0; i<test_conf_arr_key.sz; ++i)
+    for ( int i = 0; i < test_conf_arr_key.sz; ++i )
     {
         ap_log_cerror( APLOG_MARK, APLOG_ERR, 0, c,
                        "my_fixup: test_key[%i]=%s",
                        i,
-                       test_conf_arr_key.arr[i].test_key);
+                       test_conf_arr_key.arr[i].test_key );
     }
-
-    for (int i=0; i<test_conf_arr_ids.sz; ++i)
+    for ( int i = 0; i < test_conf_arr_ids.sz; ++i )
     {
         ap_log_cerror( APLOG_MARK, APLOG_ERR, 0, c,
                        "my_fixup: test_ids[%i]=%s",
                        i,
-                       test_conf_arr_ids.arr[i].test_id);
+                       test_conf_arr_ids.arr[i].test_id );
     }
 
     return OK;
@@ -195,7 +194,7 @@ static const char *store_test_id( cmd_parms *cmd, void *cfg, int argc, char *con
                        test_conf.test_id );
 
         int pos = test_conf_arr_ids.sz;
-        strncpy(test_conf_arr_ids.arr[pos].test_id, argv[0], 100);
+        strncpy( test_conf_arr_ids.arr[pos].test_id, argv[0], 100 );
         test_conf_arr_ids.sz++;
         //TODO: ProxyHTMLLinks
     }
@@ -206,7 +205,7 @@ static const char *store_test_id( cmd_parms *cmd, void *cfg, int argc, char *con
 static const char *store_test_key( cmd_parms *cmd, void *dummy, const char *arg )
 {
     int pos = test_conf_arr_key.sz;
-    strncpy(test_conf_arr_key.arr[pos].test_key, arg, 100);
+    strncpy( test_conf_arr_key.arr[pos].test_key, arg, 100 );
     test_conf_arr_key.sz++;
 
     return NULL;
