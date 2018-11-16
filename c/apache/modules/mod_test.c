@@ -1,3 +1,4 @@
+#include "apr_strings.h"
 #include "httpd.h"
 #include "http_core.h"
 #include "http_config.h"
@@ -8,33 +9,43 @@
 
 #define OUT_FILTERNAME "TEST_OUT"
 
+#define TEST_ID_LEN 50
+#define TEST_KEY_LEN 50
+
 module AP_MODULE_DECLARE_DATA test_module;
 
 typedef struct
 {
-    char test_id[100];
-    char test_key[100];
-} test_conf_t;
+    char test_id[TEST_ID_LEN + 1];
+    char test_key[TEST_KEY_LEN + 1];
+} test_key_conf_t;
 
 typedef struct
 {
-    int sz;
-    test_conf_t arr[4];
-} test_conf_arr_t;
-
-static test_conf_t test_conf;
-
-static test_conf_arr_t test_conf_arr_ids;
-static test_conf_arr_t test_conf_arr_key;
+    apr_hash_t *links;
+} test_conf;
 
 static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
 {
-    char *uri = ( char * ) ap_get_module_config( f->c->conn_config, &test_module );
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
-                   "outputFilter: uri:%s, c:0x%lx, r:0x%lx",
-                   uri,
-                   ( long int )f->c,
-                   ( long int )f->r );
+                   "outputFilter: c:0x%lx",
+                   ( long int )f->c );
+
+    // get testId and testKey from configuration
+    ap_conf_vector_t *sconf = f->c->base_server->module_config;
+    test_conf *conf = ap_get_module_config( sconf, &test_module );
+
+    apr_hash_index_t *hi;
+    for ( hi = apr_hash_first( f->c->pool, conf->links ); hi; hi = apr_hash_next( hi ) )
+    {
+        const void *key;
+        void *value;
+        apr_hash_this( hi, &key, NULL, &value );
+        ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c, "outputFilter ==> key:%s, testid:%s, testkey:%s",
+                       ( const char * ) key,
+                       ( ( const test_key_conf_t * ) value )->test_id,
+                       ( ( const test_key_conf_t * ) value )->test_key );
+    }
 
     // Extract the request line
     apr_bucket *b = APR_BRIGADE_FIRST( bb );
@@ -74,6 +85,23 @@ static int outputFilter( ap_filter_t *f, apr_bucket_brigade *bb )
                 ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
                                "outputFilter: TestHeader (%li) \"%.*s\"", hostBytes, ( int ) hostBytes, hostBufer );
                 header_test_bucket = b;
+
+                char *header = apr_psprintf( f->c->pool, "%.*s", ( int ) hostBytes, hostBufer );
+                ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
+                               "TestHeader: %s", header );
+
+                char *value = "";
+                char *strtok_state;
+
+                value = apr_strtok( header, " ", &strtok_state );
+                value = apr_strtok( NULL, " ", &strtok_state );
+                ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
+                               "TestHeader after apr_strtok(): \"%s\"", value );
+
+                value = apr_strtok( value, "\r\n", &strtok_state );
+                ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, f->c,
+                               "TestHeader after last apr_strtok(): \"%s\"", value );
+
             }
             else
             {
@@ -139,33 +167,45 @@ static int test_post_read_request( request_rec *r )
     return OK;
 }
 
-static int my_fixup( request_rec *r )
+static int my_first_fixup( request_rec *r )
 {
     conn_rec *c = r->connection;
     ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
-                   "my_fixup: uri:%s, r:0x%lx test_id:%s, test_key:%s",
+                   "my_first_fixup: uri:%s, r:0x%lx ",
                    r->uri,
-                   ( long int )r,
-                   test_conf.test_id,
-                   test_conf.test_key );
+                   ( long int )r );
 
     apr_table_addn( r->headers_in, "TestHeader", r->uri );
 
-    for ( int i = 0; i < test_conf_arr_key.sz; ++i )
+    return OK;
+}
+
+static int my_last_fixup( request_rec *r )
+{
+    conn_rec *c = r->connection;
+    ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
+                   "my_last_fixup: uri:%s, r:0x%lx ",
+                   r->uri,
+                   ( long int )r );
+
+    const char *header = apr_table_get( r->headers_in, "TestHeader" );
+
+    if ( header )
     {
-        ap_log_cerror( APLOG_MARK, APLOG_ERR, 0, c,
-                       "my_fixup: test_key[%i]=%s",
-                       i,
-                       test_conf_arr_key.arr[i].test_key );
-    }
-    for ( int i = 0; i < test_conf_arr_ids.sz; ++i )
-    {
-        ap_log_cerror( APLOG_MARK, APLOG_ERR, 0, c,
-                       "my_fixup: test_ids[%i]=%s",
-                       i,
-                       test_conf_arr_ids.arr[i].test_id );
+        ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
+                       "my_last_fixup: header:%s ",
+                       header );
+
+        char *value = apr_pstrdup( r->pool, header );
+        char *strtok_state;
+        value = apr_strtok( value, "/", &strtok_state );
+
+        ap_log_cerror( APLOG_MARK, APLOG_WARNING, 0, c,
+                       "my_last_fixup: header after strtok:%s ",
+                       value );
     }
 
+    //do nothing...
     return OK;
 }
 
@@ -173,48 +213,143 @@ static void test_register_hooks( apr_pool_t *p )
 {
     ap_register_output_filter( OUT_FILTERNAME, outputFilter, NULL, AP_FTYPE_CONNECTION ) ;
 
-    ap_hook_fixups( my_fixup, NULL, NULL, APR_HOOK_FIRST );
+    ap_hook_fixups( my_first_fixup, NULL, NULL, APR_HOOK_FIRST );
+
+    ap_hook_fixups( my_last_fixup, NULL, NULL, APR_HOOK_LAST );
 
     ap_hook_pre_connection( test_pre_conn, NULL, NULL, APR_HOOK_FIRST );
 
     ap_hook_post_read_request( test_post_read_request, NULL, NULL, APR_HOOK_FIRST );
 }
 
-static const char *store_test_id( cmd_parms *cmd, void *cfg, int argc, char *const argv[] )
+static void *test_config( apr_pool_t *pool, server_rec *s )
 {
-    if ( argc != 1 )
+    test_conf *ret = apr_pcalloc( pool, sizeof( test_conf ) );
+
+    /* don't initialize links and events until they get set/used */
+    return ret;
+}
+
+static const char *store_test_id( cmd_parms *cmd, void *CFG, const char *key, const char *testId )
+{
+    server_rec *s = cmd->server;
+    test_key_conf_t *cfg;
+    test_conf *conf = ap_get_module_config( s->module_config, &test_module );
+
+    if ( !conf )
     {
-        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool,
-                       "testId requires exactly one argument." );
+        ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool,
+                       "store_test_id: cannot find server configuration" );
+        return NULL;
+    }
+
+    if ( strlen( testId ) > TEST_ID_LEN )
+    {
+        ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool,
+                       "store_test_id: val parameter length should be (0, %i], is %lu.",
+                       TEST_ID_LEN, strlen( testId ) );
+        return NULL;
+    }
+
+    if ( conf->links == NULL )
+    {
+        conf->links = apr_hash_make( cmd->pool );
+
+        if ( !conf->links )
+        {
+            ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool,
+                           "store_test_id: cannot create links" );
+            return NULL;
+        }
+    }
+
+    cfg = apr_hash_get( conf->links, key, APR_HASH_KEY_STRING );
+
+    if ( !cfg )
+    {
+        cfg = apr_pcalloc( cmd->pool, sizeof( test_key_conf_t ) );
+        strncpy( cfg->test_id, testId,  sizeof( cfg->test_id ) );
+
+        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool, "store_test_id: key: %s, val: %s",
+                       key,
+                       cfg->test_id );
+
+        apr_hash_set( conf->links, key, APR_HASH_KEY_STRING, cfg );
     }
     else
     {
-        strcpy( test_conf.test_id, argv[0] );
-        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool, "testId: %s",
-                       test_conf.test_id );
+        strncpy( cfg->test_id, testId,  sizeof( cfg->test_id ) );
 
-        int pos = test_conf_arr_ids.sz;
-        strncpy( test_conf_arr_ids.arr[pos].test_id, argv[0], 100 );
-        test_conf_arr_ids.sz++;
-        //TODO: ProxyHTMLLinks
+        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool, "store_test_id: key: %s, val: %s",
+                       key,
+                       cfg->test_id );
     }
 
     return NULL;
 }
 
-static const char *store_test_key( cmd_parms *cmd, void *dummy, const char *arg )
+static const char *store_test_key( cmd_parms *cmd, void *CFG, const char *key, const char *testKey )
 {
-    int pos = test_conf_arr_key.sz;
-    strncpy( test_conf_arr_key.arr[pos].test_key, arg, 100 );
-    test_conf_arr_key.sz++;
+    server_rec *s = cmd->server;
+    test_key_conf_t *cfg;
+    test_conf *conf = ap_get_module_config( s->module_config, &test_module );
+
+    if ( !conf )
+    {
+        ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool,
+                       "store_test_key: cannot find server configuration" );
+        return NULL;
+    }
+
+    if ( strlen( testKey ) > TEST_KEY_LEN )
+    {
+        ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool,
+                       "store_test_id: val parameter length should be (0, %i], is %lu.",
+                       TEST_KEY_LEN, strlen( testKey ) );
+        return NULL;
+    }
+
+    if ( conf->links == NULL )
+    {
+        conf->links = apr_hash_make( cmd->pool );
+
+        if ( !conf->links )
+        {
+            ap_log_perror( APLOG_MARK, APLOG_ERR, 0, cmd->pool,
+                           "store_test_key: cannot create links" );
+            return NULL;
+        }
+    }
+
+    cfg = apr_hash_get( conf->links, key, APR_HASH_KEY_STRING );
+
+    if ( !cfg )
+    {
+        cfg = apr_pcalloc( cmd->pool, sizeof( test_key_conf_t ) );
+        strncpy( cfg->test_key, testKey,  sizeof( cfg->test_key ) );
+
+        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool, "store_test_key: key: %s, val: %s",
+                       key,
+                       cfg->test_key );
+
+        apr_hash_set( conf->links, key, APR_HASH_KEY_STRING, cfg );
+    }
+    else
+    {
+        strncpy( cfg->test_key, testKey,  sizeof( cfg->test_key ) );
+
+        ap_log_perror( APLOG_MARK, APLOG_WARNING, 0, cmd->pool, "store_test_key: key: %s, val: %s",
+                       key,
+                       cfg->test_key );
+    }
 
     return NULL;
 }
 
 static const command_rec test_cmds[] =
 {
-    AP_INIT_TAKE_ARGV( "testId", store_test_id, NULL, OR_FILEINFO, "test Id" ),
-    AP_INIT_ITERATE( "testKey", store_test_key, NULL, RSRC_CONF, "test Key" ),
+    AP_INIT_ITERATE2( "testId", store_test_id, NULL, OR_FILEINFO, "test Id" ),
+    AP_INIT_ITERATE2( "testKey", store_test_key, NULL, OR_FILEINFO, "test Key" ),
     { NULL }
 };
 
@@ -223,10 +358,10 @@ AP_DECLARE_MODULE( test ) =
     STANDARD20_MODULE_STUFF,
     NULL,                   /* create per-dir    config structures */
     NULL,                   /* merge  per-dir    config structures */
-    NULL,                   /* create per-server config structures */
+    test_config,            /* create per-server config structures */
     NULL,                   /* merge  per-server config structures */
-    test_cmds,           /* table of config file commands       */
-    test_register_hooks  /* register hooks                      */
+    test_cmds,              /* table of config file commands       */
+    test_register_hooks     /* register hooks                      */
 };
 
 //curl -k "http://127.0.0.1:8081/google/imghp"
