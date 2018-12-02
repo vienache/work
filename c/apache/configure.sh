@@ -8,6 +8,7 @@ sudo a2enmod proxy_connect
 sudo a2enmod proxy_http
 sudo a2enmod rewrite
 sudo a2enmod ssl
+sudo a2enmod status
 echo
 
 echo 'Copy apache2 configuration to /etc/apache2...'
