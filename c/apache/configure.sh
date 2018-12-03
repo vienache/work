@@ -13,7 +13,7 @@ echo
 
 echo 'Copy apache2 configuration to /etc/apache2...'
 sudo cp etc/apache2/apache2.conf /etc/apache2
-sudo cp etc/apache2/conf/* /etc/apache2/conf
+sudo cp -fR etc/apache2/conf/* /etc/apache2/conf
 echo
 
 echo 'Restart Apache2...'
