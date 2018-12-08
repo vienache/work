@@ -1,5 +1,5 @@
 
-# build the app
+# build the app based on the Dockerfile
 docker build -t friendlyhello .
 
 # show available images
