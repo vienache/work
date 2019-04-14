@@ -1,5 +1,5 @@
 --suffix=none
---indent=spaces=4
+--indent=spaces=3
 --style=allman
 --indent-switches
 --indent-namespaces
@@ -10,7 +10,7 @@
 --pad-paren-in
 --break-closing-brackets
 --add-brackets
---max-code-length=100
+--max-code-length=80
 --break-after-logical
 --min-conditional-indent=0
 --keep-one-line-blocks

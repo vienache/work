@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<description>First test</description>
+
+<test_case>
+  
+  <!-- SET -->
+  <set module="MOD_1" value="test" />
+  
+  <!-- CALL -->
+  <call module="MOD_1" method="foo" value="test" />
+
+  <!-- WAIT -->
+  <wait module="MOD_1" trigger="fired" />
+  <wait_group>
+    <condition module="MOD_3" trigger="fired" />
+    <condition module="MOD_4" trigger="fired" />
+  </wait_group>
+  <wait_until timeout="5"/>
+
+</test_case>
